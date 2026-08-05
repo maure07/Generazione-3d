@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg
+
+# Node / Electron
+node_modules/
+dist/
+dist-electron/
+release/
+*.tsbuildinfo
+
+# Configurazione locale (contiene le chiavi API)
+.env
+.env.local
+backend/.env
+
+# Dati applicativi e output
+*.log
+logs/
+data/
+uploads/
+exports/
+cache/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "printready-ai"
+version = "1.0.0"
+description = "PrintReady AI - da immagine + prompt a modello 3D pronto per la stampa FDM"
+readme = "../README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [{ name = "PrintReady AI Team" }]
+
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "trimesh>=4.0",
+    "manifold3d>=2.3",
+    "networkx>=3.2",
+    "shapely>=2.0",
+    "pillow>=10.2",
+    "lxml>=5.0",
+    "rtree>=1.2",
+    "fast-simplification>=0.1.7",
+    "embreex>=2.17",
+]
+
+[project.optional-dependencies]
+gpu = ["torch>=2.2"]
+pro = ["open3d>=0.18", "pymeshlab>=2023.12"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.3", "mypy>=1.9"]
+
+[project.scripts]
+printready-server = "printready.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["printready*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning", "ignore::RuntimeWarning"]
+markers = [
+    "slow: test che eseguono la pipeline completa (alcuni minuti)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
