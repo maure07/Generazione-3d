@@ -34,18 +34,29 @@ function backendDir(): string {
     : path.join(process.resourcesPath, 'backend');
 }
 
-/** Interprete Python da usare: quello del venv incluso, altrimenti quello di sistema. */
-function pythonExecutable(): string {
+/**
+ * Interprete Python da usare.
+ *
+ * Si cerca un ambiente virtuale prima dentro `backend/` (come indica il README)
+ * e poi nella radice del progetto, perché è una collocazione altrettanto
+ * comune. Solo in ultima istanza si ricade sul Python di sistema, che quasi
+ * certamente non ha le dipendenze installate: in quel caso il fallimento va
+ * spiegato bene all'utente, ed è ciò che fa `startBackend`.
+ */
+function pythonExecutable(): { command: string; fromVenv: boolean } {
   const dir = backendDir();
-  const candidates =
+  const root = path.join(dir, '..');
+  const relative =
     process.platform === 'win32'
-      ? [path.join(dir, '.venv', 'Scripts', 'python.exe'), 'python']
-      : [path.join(dir, '.venv', 'bin', 'python'), 'python3'];
+      ? path.join('.venv', 'Scripts', 'python.exe')
+      : path.join('.venv', 'bin', 'python');
 
-  for (const candidate of candidates) {
-    if (candidate.includes(path.sep) && existsSync(candidate)) return candidate;
+  for (const base of [dir, root]) {
+    const candidate = path.join(base, relative);
+    if (existsSync(candidate)) return { command: candidate, fromVenv: true };
   }
-  return candidates[candidates.length - 1];
+
+  return { command: process.platform === 'win32' ? 'python' : 'python3', fromVenv: false };
 }
 
 /** Verifica se il backend risponde già. */
@@ -60,6 +71,36 @@ async function backendIsUp(): Promise<boolean> {
   }
 }
 
+/** Estrae dal traceback di Python il motivo comprensibile del fallimento. */
+function explainBackendFailure(output: string, fromVenv: boolean): string {
+  const mancante = output.match(/ModuleNotFoundError: No module named '([^']+)'/);
+  if (mancante) {
+    const dove = fromVenv
+      ? "nell'ambiente virtuale"
+      : 'nel Python di sistema (non è stato trovato alcun ambiente virtuale)';
+    return (
+      `Manca la libreria «${mancante[1]}» ${dove}.\n\n` +
+      'Aprire un terminale nella cartella backend ed eseguire:\n\n' +
+      (process.platform === 'win32'
+        ? '    python -m venv .venv\n    .venv\\Scripts\\activate\n    pip install -r requirements.txt'
+        : '    python3 -m venv .venv\n    source .venv/bin/activate\n    pip install -r requirements.txt')
+    );
+  }
+
+  if (/ENOENT|not found|non trovato/i.test(output)) {
+    return (
+      'Python non è stato trovato.\n\n' +
+      'Installare Python 3.10 o successivo e assicurarsi che sia nel PATH ' +
+      '(durante l\'installazione spuntare «Add Python to PATH»).'
+    );
+  }
+
+  const righe = output.trim().split('\n').slice(-12).join('\n');
+  return righe
+    ? `Il motore di elaborazione si è chiuso con questo errore:\n\n${righe}`
+    : 'Il motore di elaborazione si è chiuso senza spiegazioni. Consultare il log dell\'applicazione.';
+}
+
 /** Avvia il backend e attende che risponda. */
 async function startBackend(): Promise<void> {
   if (await backendIsUp()) {
@@ -67,19 +108,40 @@ async function startBackend(): Promise<void> {
     return;
   }
 
-  const python = pythonExecutable();
-  console.log(`Avvio del backend: ${python} -m printready --port ${BACKEND_PORT}`);
+  const { command, fromVenv } = pythonExecutable();
+  console.log(`Avvio del backend: ${command} -m printready --port ${BACKEND_PORT}`);
+  if (!fromVenv) {
+    console.warn(
+      'Nessun ambiente virtuale trovato: uso il Python di sistema, che potrebbe non avere le dipendenze',
+    );
+  }
 
-  backend = spawn(python, ['-m', 'printready', '--port', String(BACKEND_PORT)], {
+  // Le ultime righe di output servono a spiegare un eventuale fallimento:
+  // senza di esse l'utente vedrebbe solo un timeout senza causa.
+  let output = '';
+  let exited: number | null = null;
+
+  backend = spawn(command, ['-m', 'printready', '--port', String(BACKEND_PORT)], {
     cwd: backendDir(),
     env: { ...process.env, PYTHONUNBUFFERED: '1' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
-  backend.stdout?.on('data', (data) => process.stdout.write(`[backend] ${data}`));
-  backend.stderr?.on('data', (data) => process.stderr.write(`[backend] ${data}`));
+  const raccogli = (data: Buffer) => {
+    const testo = String(data);
+    output = (output + testo).slice(-4000);
+    process.stderr.write(`[backend] ${testo}`);
+  };
+  backend.stdout?.on('data', raccogli);
+  backend.stderr?.on('data', raccogli);
+
+  backend.on('error', (error) => {
+    output += `\n${error.message}`;
+    exited = -1;
+  });
   backend.on('exit', (code) => {
     console.log(`Backend terminato con codice ${code}`);
+    exited = code ?? -1;
     backend = null;
   });
 
@@ -89,12 +151,18 @@ async function startBackend(): Promise<void> {
       console.log('Backend pronto');
       return;
     }
+    // Se il processo è già morto è inutile attendere il timeout: si può dire
+    // subito all'utente che cosa è andato storto.
+    if (exited !== null) {
+      throw new Error(explainBackendFailure(output, fromVenv));
+    }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   throw new Error(
-    "Il motore di elaborazione non si è avviato entro il tempo previsto. " +
-      'Verificare che Python e le dipendenze siano installati correttamente.',
+    'Il motore di elaborazione non ha risposto entro ' +
+      `${Math.round(BACKEND_TIMEOUT_MS / 1000)} secondi.\n\n` +
+      explainBackendFailure(output, fromVenv),
   );
 }
 

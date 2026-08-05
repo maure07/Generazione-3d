@@ -47,6 +47,9 @@ annullata e segnalata invece di essere applicata in silenzio.
 - Node.js 18 o successivo (solo per compilare l'interfaccia)
 - GPU NVIDIA con CUDA — facoltativa, accelera i modelli locali
 
+> **Su Windows?** C'è una guida passo passo con i problemi tipici già risolti:
+> [Installazione su Windows](docs/INSTALLAZIONE_WINDOWS.md).
+
 ### Avvio rapido
 
 ```bash
@@ -126,6 +129,7 @@ frontend/
 
 Documentazione approfondita in [`docs/`](docs/):
 
+- [Installazione su Windows](docs/INSTALLAZIONE_WINDOWS.md) — guida passo passo
 - [Architettura](docs/ARCHITETTURA.md) — come sono fatte le cose e perché
 - [Guida utente](docs/GUIDA_UTENTE.md) — dall'immagine alla stampa
 - [API](docs/API.md) — riferimento degli endpoint

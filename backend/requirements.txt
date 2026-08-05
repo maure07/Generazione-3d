@@ -21,6 +21,7 @@ lxml>=5.0                # lettura/scrittura 3MF
 rtree>=1.2              # indice spaziale: ray casting, autointersezioni, prossimità
 fast-simplification>=0.1.7  # decimazione QEM compilata (fallback interno se assente)
 embreex>=2.17           # ray tracing Intel Embree: ~1000x sul controllo spessori
+scikit-image>=0.22      # marching cubes del generatore locale (esiste una riserva a voxel)
 
 # Opzionali (attivati automaticamente se presenti)
 # open3d>=0.18         # ricostruzione superfici, filtri avanzati
