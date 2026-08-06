@@ -1,0 +1,51 @@
+# Configurazione locale della pipeline. Sovrascrive i default di gen3d/config.py.
+# Adatta i percorsi ai tuoi checkpoint/repo reali su Windows prima di lanciare `run`.
+# `python main.py check` verifica che tutto sia raggiungibile.
+
+lmstudio:
+  base_url: "http://localhost:1234/v1"
+  vision_model: "qwen2-vl-7b-instruct"
+  coder_model: "qwen2.5-coder-14b-instruct"
+  fast_model: "qwen2.5-coder-7b-instruct"
+
+models:
+  instantmesh_ckpt: "C:\\models\\instantmesh\\instant_mesh_large.ckpt"
+  triposr_ckpt: "C:\\models\\triposr\\model.ckpt"
+  lgm_ckpt: "C:\\models\\lgm\\model_fp16.safetensors"
+  instantmesh_repo: "third_party\\InstantMesh"
+  triposr_repo: "third_party\\TripoSR"
+  lgm_repo: "third_party\\LGM"
+  python_executable: "python"
+
+generation:
+  backends: ["instantmesh", "triposr", "lgm"]
+  fusion_weights:
+    instantmesh: 1.2
+    triposr: 0.8
+    lgm: 1.0
+  voxel_pitch_mm: 1.0
+  fusion_vote_threshold: 1.0
+  target_size_mm: 100.0
+
+cleanup:
+  fill_holes: true
+  remove_small_components_ratio: 0.02
+  smooth_iterations: 0
+  fix_normals: true
+
+cutter:
+  pin_diameter_mm: 6.0
+  pin_length_mm: 12.0
+  tolerance_mm: 0.2
+  n_pins: 2
+  boolean_engines: ["manifold", "blender", "scad"]
+  max_part_bbox_mm: [220.0, 220.0, 250.0]
+
+export:
+  formats: ["stl", "obj", "3mf"]
+  output_dir: "output"
+
+orchestrator:
+  max_autodebug_retries: 3
+  use_vision_agent: true
+  use_autodebug: true

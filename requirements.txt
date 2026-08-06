@@ -1,0 +1,26 @@
+# Geometria core (obbligatorie)
+trimesh>=4.4
+numpy>=1.26
+scipy>=1.12
+shapely>=2.0
+networkx>=3.2
+rtree>=1.2
+
+# Engine booleano robusto per tagli su mesh complesse (vedi README, punto 5)
+manifold3d>=2.5
+
+# Ricostruzione superficie dalla griglia voxel fusa (ensemble InstantMesh/TripoSR/LGM)
+scikit-image>=0.24
+
+# Riparazione avanzata di mesh non-watertight (fallback dopo trimesh.repair)
+pymeshfix>=0.17
+
+# Export 3MF
+lxml>=5.2
+
+# Config + agenti locali (LM Studio via API OpenAI-compatible)
+pyyaml>=6.0
+requests>=2.31
+
+# CLI / utility
+pytest>=8.0
